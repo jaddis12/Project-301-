@@ -1,0 +1,21 @@
+
+Collecting usage statistics. To deactivate, set browser.gatherUsageStats to false.
+
+
+  You can now view your Streamlit app in your browser.
+
+  URL: http://127.0.0.1:8501
+
+2026-04-20 12:29:50.409 200 GET / (127.0.0.1) 0.50ms
+2026-04-20 12:46:50.351 304 GET / (127.0.0.1) 0.00ms
+2026-04-20 12:46:50.692 304 GET /_stcore/health (127.0.0.1) 0.00ms
+2026-04-20 12:46:50.693 304 GET /_stcore/host-config (127.0.0.1) 1.00ms
+2026-04-20 12:46:50.705 101 GET /_stcore/stream (127.0.0.1) 1.26ms
+2026-04-20 12:46:56.256 304 GET /_stcore/health (127.0.0.1) 1.28ms
+2026-04-20 12:46:56.256 304 GET /_stcore/host-config (127.0.0.1) 0.00ms
+2026-04-20 12:46:56.269 101 GET /_stcore/stream (127.0.0.1) 0.00ms
+forrtl: error (200): program aborting due to window-CLOSE event
+Image              PC                Routine            Line        Source             
+KERNELBASE.dll     00007FFE68F3A3CD  Unknown               Unknown  Unknown
+KERNEL32.dll       00007FFE6A77E8D7  Unknown               Unknown  Unknown
+ntdll.dll          00007FFE6C1AC3FC  Unknown               Unknown  Unknown
