@@ -1,6 +1,6 @@
 # Blackjack AI Coach MVP
 
-This folder contains the completed MVP deliverable for Project 301.
+Our team propses to create an Ai startup that counts cards at blackjack, and poker tables. 
 
 ## Files
 
