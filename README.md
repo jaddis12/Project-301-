@@ -27,7 +27,7 @@ determine
 ## Files
 
 | Blackjack_app | Purpose |
-| --- | --- | --- |
+| --- | --- |
 | `app.py` | web UI interface |
 | `blackjack_engine.py` | core decision engine |
 | `build_blackjack_dataset.py` | generates data for the deck of cards |
