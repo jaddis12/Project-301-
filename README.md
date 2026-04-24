@@ -26,7 +26,7 @@ determine
 
 ## Files
 
-| File | Blaackjack_app | Purpose |
+| Blackjack_app | Purpose |
 | --- | --- | --- |
 | `app.py` | web UI interface |
 | `blackjack_engine.py` | core decision engine |
