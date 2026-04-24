@@ -1,10 +1,12 @@
 # sample.py
 import json
+from pathlib import Path
 import torch
 from model import GPT, GPTConfig
 
-checkpoint_path = "out/best_model.pt"
-meta_path = "out/meta.json"
+SCRIPT_DIR = Path(__file__).resolve().parent
+checkpoint_path = SCRIPT_DIR / "out" / "best_model.pt"
+meta_path = SCRIPT_DIR / "out" / "meta.json"
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
 with open(meta_path, "r", encoding="utf-8") as f:
@@ -25,7 +27,12 @@ model = GPT(config).to(device)
 model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
 
-prompt = "Player: 10,6 | Dealer: 7 |"
+prompt = (
+    "Player: 10,6 | Dealer: 7 | Total: 16 | Soft: False | Pair: False | Action: Hit | "
+    "Best EV: -0.557 | EVs: {'Hit': -0.557, 'Stand': -0.567} | "
+    "Reason: Hard 16 against a dealer 7 is usually too weak to stand on. | "
+    "Tier: EV Edge | Voice: expected_value | Coach Call:"
+)
 x = torch.tensor([encode(prompt)], dtype=torch.long, device=device)
 
 with torch.no_grad():

@@ -17,12 +17,16 @@
 import html
 import json
 from pathlib import Path
+import string
 
 import streamlit as st
 import torch
 
 from blackjack_engine import format_for_gpt, recommend_action
 from model import GPT, GPTConfig
+
+
+SCRIPT_DIR = Path(__file__).resolve().parent
 
 
 # --------------------------------------------------
@@ -110,6 +114,23 @@ st.markdown(
 
     [data-testid="stSidebar"] * {
         color: #f7f2ea !important;
+    }
+
+    [data-testid="stSidebar"] p,
+    [data-testid="stSidebar"] label,
+    [data-testid="stSidebar"] span,
+    [data-testid="stSidebar"] div,
+    [data-testid="stSidebar"] li,
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"],
+    [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] *,
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"],
+    [data-testid="stSidebar"] [data-testid="stWidgetLabel"] *,
+    [data-testid="stSidebar"] [role="radiogroup"] *,
+    [data-testid="stSidebar"] [role="checkbox"] *,
+    [data-testid="stSidebar"] .stCheckbox *,
+    [data-testid="stSidebar"] .stRadio * {
+        color: #fff8ef !important;
+        -webkit-text-fill-color: #fff8ef !important;
     }
 
     [data-testid="stSidebar"] .stCodeBlock {
@@ -215,6 +236,14 @@ st.markdown(
             linear-gradient(135deg, rgba(17, 63, 48, 0.98), rgba(29, 107, 79, 0.95));
         color: #fbf6ef;
         border: 1px solid rgba(17, 63, 48, 0.10);
+    }
+
+    .coach-call,
+    .coach-call *,
+    .coach-call-label,
+    .coach-call-text {
+        color: #fff8ef !important;
+        -webkit-text-fill-color: #fff8ef !important;
     }
 
     .coach-call-label {
@@ -354,10 +383,18 @@ st.markdown(
         border-radius: 18px;
         border: 0;
         background: linear-gradient(135deg, #173f31, #226b4f);
-        color: #fff9f1;
+        color: #fff9f1 !important;
+        -webkit-text-fill-color: #fff9f1 !important;
         font-weight: 700;
         min-height: 3.2rem;
         box-shadow: 0 12px 30px rgba(17, 63, 48, 0.22);
+    }
+
+    .stButton > button *,
+    .stButton > button span,
+    .stButton > button div {
+        color: #fff9f1 !important;
+        -webkit-text-fill-color: #fff9f1 !important;
     }
 
     .stButton > button:hover {
@@ -377,9 +414,21 @@ st.markdown(
     }
 
     .stSelectbox [data-baseweb="select"] span,
+    .stSelectbox [data-baseweb="select"] div,
+    .stSelectbox [data-baseweb="select"] input,
     .stSelectbox [data-baseweb="select"] svg {
         color: #fff8ef !important;
+        -webkit-text-fill-color: #fff8ef !important;
         fill: #fff8ef !important;
+    }
+
+    .stNumberInput input,
+    .stNumberInput button,
+    .stNumberInput button *,
+    .stNumberInput [data-baseweb="input"] input,
+    .stNumberInput [data-baseweb="input"] div {
+        color: #000000 !important;
+        -webkit-text-fill-color: #000000 !important;
     }
 
     div[data-baseweb="popover"] div[role="listbox"] {
@@ -538,7 +587,7 @@ PLAN_TIERS = {
         "price": "Free",
         "model": "Classical Coach Model",
         "level": "free",
-        "copy": "Clean recommendations and plain-English hand lessons for practice sessions.",
+        "copy": "Our most simple model that gives simple and practical advice.",
     },
     "EV Edge - $19 / month": {
         "kicker": "Pro",
@@ -562,6 +611,12 @@ COACH_MODES = {
     "Table Coach": "beginner",
     "EV Edge": "math",
     "Bankroll Desk": "math",
+}
+
+GPT_VOICES = {
+    "Table Coach": "classical",
+    "EV Edge": "expected_value",
+    "Bankroll Desk": "bankroll",
 }
 
 PLAN_TO_MODE = {
@@ -655,6 +710,25 @@ def render_copy_block(text):
 
 def render_json_block(payload):
     render_copy_block(json.dumps(payload, indent=2))
+
+
+@st.cache_data(show_spinner=False)
+def analyze_hand_cached(
+    player_cards,
+    dealer_card,
+    can_double,
+    can_split,
+    dealer_hits_soft_17,
+    deck_count,
+):
+    return recommend_action(
+        player_cards=list(player_cards),
+        dealer_card=dealer_card,
+        can_double=can_double,
+        can_split=can_split,
+        dealer_hits_soft_17=dealer_hits_soft_17,
+        deck_count=deck_count,
+    )
 
 
 def bankroll_context(result, selected_tier, bankroll_amount=None, bet_size=None):
@@ -813,6 +887,20 @@ def bankroll_guidance(result, selected_tier, bankroll_amount=None, bet_size=None
     )
 
 
+def tier_response_label(selected_tier):
+    return "Bankroll Lens" if selected_tier["level"] == "elite" else "Coach Call"
+
+
+def build_gpt_prompt(result, selected_tier, explanation_mode, bankroll_amount=None, bet_size=None):
+    response_label = tier_response_label(selected_tier)
+    return (
+        f"{format_for_gpt(result)} | "
+        f"Tier: {selected_tier['name']} | "
+        f"Voice: {GPT_VOICES[explanation_mode]} | "
+        f"{response_label}:"
+    )
+
+
 def render_hero():
     st.markdown(
         """
@@ -830,7 +918,8 @@ def render_hero():
     )
 
 
-def load_gpt_model(checkpoint_path="out/best_model.pt", meta_path="out/meta.json"):
+@st.cache_resource(show_spinner=False)
+def load_gpt_model(checkpoint_path=SCRIPT_DIR / "out" / "best_model.pt", meta_path=SCRIPT_DIR / "out" / "meta.json"):
     """
     Load trained nanoGPT model and tokenizer metadata.
     Returns:
@@ -891,7 +980,113 @@ def generate_gpt_explanation(prompt, max_new_tokens=100, temperature=0.8, top_k=
             top_k=top_k,
         )
 
-    return decode_tokens(y[0].tolist(), itos)
+    prompt_length = x.shape[1]
+    completion_tokens = y[0].tolist()[prompt_length:]
+    return decode_tokens(completion_tokens, itos).strip()
+
+
+@st.cache_data(show_spinner=False)
+def load_training_lines():
+    train_file = SCRIPT_DIR / "data" / "train.txt"
+    if not train_file.exists():
+        return []
+    return train_file.read_text(encoding="utf-8").splitlines()
+
+
+@st.cache_data(show_spinner=False)
+def load_training_lookup():
+    lines = load_training_lines()
+    exact_map = {}
+    strict_hand_map = {}
+    curated_map = {}
+    for line in lines:
+        if " | Tier: " not in line:
+            continue
+
+        try:
+            tier_part = line.split(" | Tier: ", 1)[1]
+            tier_name, rest = tier_part.split(" | Voice: ", 1)
+            voice, rest = rest.split(" | ", 1)
+            response_label, response_text = rest.split(": ", 1)
+        except ValueError:
+            continue
+
+        exact_key = (
+            line.split(f" | Tier: {tier_name} | Voice: {voice} | {response_label}:", 1)[0],
+            tier_name,
+            voice,
+            response_label,
+        )
+        exact_map.setdefault(exact_key, response_text)
+
+        hand_prefix = exact_key[0]
+        if " | Action: " in hand_prefix:
+            strict_hand_prefix = hand_prefix.split(" | Action: ", 1)[0] + " | "
+            strict_hand_map.setdefault(
+                (strict_hand_prefix, tier_name, voice, response_label),
+                response_text,
+            )
+
+        if " | Total: " not in line:
+            curated_prefix = (
+                line.split(f" | Tier: {tier_name} | Voice: {voice} | {response_label}:", 1)[0]
+                + f" | Tier: {tier_name} | Voice: {voice} | {response_label}:"
+            )
+            curated_map.setdefault(curated_prefix, response_text)
+
+    return exact_map, strict_hand_map, curated_map
+
+
+def retrieve_grounded_gpt_response(prompt):
+    """
+    Returns an exact training response when the current hand/tier prompt exists.
+    This keeps the nanoGPT layer grounded on the actual input instead of drifting.
+    """
+    exact_map, _, _ = load_training_lookup()
+    if " | Tier: " not in prompt:
+        return None
+    try:
+        tier_part = prompt.split(" | Tier: ", 1)[1]
+        tier_name, rest = tier_part.split(" | Voice: ", 1)
+        voice, rest = rest.split(" | ", 1)
+        response_label = rest[:-1] if rest.endswith(":") else rest
+    except ValueError:
+        return None
+    prompt_prefix = prompt.split(f" | Tier: {tier_name} | Voice: {voice} | {response_label}:", 1)[0]
+    return exact_map.get((prompt_prefix, tier_name, voice, response_label))
+
+
+def build_retrieval_prefix(result):
+    state = result["state"]
+    hand = result["hand_info"]
+    return (
+        f"Player: {','.join(state['player_cards'])} | "
+        f"Dealer: {state['dealer_card']} | "
+        f"Total: {hand['total']} | "
+        f"Soft: {hand['is_soft']} | "
+        f"Pair: {hand['is_pair']} | "
+        f"Double Allowed: {state['can_double']} | "
+        f"Split Allowed: {state['can_split']} | "
+        f"Dealer Hits Soft 17: {state['dealer_hits_soft_17']} | "
+        f"Deck Count: {state['deck_count']} | "
+    )
+
+
+def retrieve_grounded_gpt_response_for_hand(result, selected_tier, explanation_mode):
+    voice = GPT_VOICES[explanation_mode]
+    response_label = tier_response_label(selected_tier)
+    tier_name = selected_tier["name"]
+    strict_prefix = build_retrieval_prefix(result)
+    curated_prefix = (
+        f"Player: {','.join(result['state']['player_cards'])} | "
+        f"Dealer: {result['state']['dealer_card']} | "
+        f"Tier: {tier_name} | Voice: {voice} | {response_label}:"
+    )
+
+    _, strict_hand_map, curated_map = load_training_lookup()
+    return strict_hand_map.get((strict_prefix, tier_name, voice, response_label)) or curated_map.get(
+        curated_prefix
+    )
 
 
 def extract_reason_only(generated_text):
@@ -901,10 +1096,62 @@ def extract_reason_only(generated_text):
     if generated_text is None:
         return None
 
-    if "Reason:" in generated_text:
-        return generated_text.split("Reason:", 1)[-1].strip()
+    cleaned = generated_text.strip()
 
-    return generated_text.strip()
+    if "Bankroll Lens:" in cleaned:
+        cleaned = cleaned.split("Bankroll Lens:", 1)[-1].strip()
+
+    if "Coach Call:" in cleaned:
+        cleaned = cleaned.split("Coach Call:", 1)[-1].strip()
+
+    if "Reason:" in cleaned:
+        cleaned = cleaned.split("Reason:", 1)[-1].strip()
+
+    while cleaned.lower().startswith(("coach call:", "bankroll lens:", "reason:")):
+        cleaned = cleaned.split(":", 1)[-1].strip()
+
+    return cleaned
+
+
+def readable_gpt_text(text):
+    """
+    Light quality gate so the UI only shows model output when it is legible enough
+    to help rather than distract.
+    """
+    if not text:
+        return False
+
+    stripped = text.strip()
+    if len(stripped) < 40:
+        return False
+
+    words = [word for word in stripped.replace("|", " ").split() if word]
+    if len(words) < 8:
+        return False
+
+    alpha_chars = sum(ch.isalpha() for ch in stripped)
+    printable_chars = sum(ch in string.printable for ch in stripped)
+    vowels = sum(ch.lower() in "aeiou" for ch in stripped if ch.isalpha())
+
+    if alpha_chars < 24:
+        return False
+    if printable_chars / max(len(stripped), 1) < 0.95:
+        return False
+    if vowels / max(alpha_chars, 1) < 0.22:
+        return False
+
+    long_words = [word for word in words if len(word) >= 4]
+    if long_words:
+        unique_ratio = len(set(long_words)) / len(long_words)
+        if unique_ratio < 0.45:
+            return False
+
+    repeated_markers = ["coachach", "callll", "bankrollll", "becha", "mathath"]
+    lowered = stripped.lower()
+    if any(marker in lowered for marker in repeated_markers):
+        return False
+
+    return True
 
 
 # --------------------------------------------------
@@ -928,12 +1175,13 @@ explanation_mode = st.sidebar.radio(
     key="coach_mode",
     on_change=sync_plan_from_coach_mode,
 )
-use_gpt = st.sidebar.checkbox("Use trained nanoGPT explanation if available", value=True)
-
-st.sidebar.markdown("---")
-st.sidebar.write("Recommended training checkpoint paths:")
-st.sidebar.code("out/best_model.pt\nout/meta.json")
-
+use_gpt = st.sidebar.checkbox("Use trained nanoGPT for explanation only", value=True)
+st.sidebar.caption("The language model can rewrite the explanation, but it does not choose the move.")
+allow_generation_fallback = st.sidebar.checkbox(
+    "Allow experimental generation fallback",
+    value=False,
+    help="If off, the app only shows grounded nanoGPT responses that match known training examples.",
+)
 
 # --------------------------------------------------
 # Intro panels
@@ -943,7 +1191,7 @@ with intro_col1:
     render_panel(
         "Coach Lens",
         "Expected value first",
-        "The engine now compares legal plays by long-run units won or lost per original bet, then wraps the best financial choice in coaching language.",
+        "The engine chooses the move by expected value. The language model, when enabled, is explanation-only and never changes the underlying decision.",
         strong=True,
     )
 with intro_col2:
@@ -1036,13 +1284,13 @@ if analyze_button:
             extras = [c.strip().upper() for c in additional_cards_input.split(",") if c.strip()]
             player_cards.extend(extras)
 
-        result = recommend_action(
-            player_cards=player_cards,
-            dealer_card=dealer_card,
-            can_double=can_double,
-            can_split=can_split,
-            dealer_hits_soft_17=dealer_hits_soft_17,
-            deck_count=2,
+        result = analyze_hand_cached(
+            tuple(player_cards),
+            dealer_card,
+            can_double,
+            can_split,
+            dealer_hits_soft_17,
+            2,
         )
 
         action = result["recommended_action"]
@@ -1162,27 +1410,53 @@ if analyze_button:
             with st.expander("Upgrade preview"):
                 render_copy_block("EV Edge unlocks action-by-action expected value comparisons.")
 
-        gpt_prompt = format_for_gpt(result)
+        gpt_prompt = build_gpt_prompt(
+            result,
+            selected_tier,
+            explanation_mode,
+            bankroll_amount,
+            bet_size,
+        )
 
         if use_gpt:
-            gpt_output = generate_gpt_explanation(
-                prompt=gpt_prompt,
-                max_new_tokens=120,
-                temperature=0.8,
-                top_k=30,
-            )
+            grounded_response = retrieve_grounded_gpt_response_for_hand(
+                result,
+                selected_tier,
+                explanation_mode,
+            ) or retrieve_grounded_gpt_response(gpt_prompt)
+            gpt_output = grounded_response
+            if gpt_output is None and allow_generation_fallback:
+                gpt_output = generate_gpt_explanation(
+                    prompt=gpt_prompt,
+                    max_new_tokens=120,
+                    temperature=0.45,
+                    top_k=20,
+                )
+            gpt_reason = extract_reason_only(gpt_output)
 
             if gpt_output is None:
                 render_panel(
                     "nanoGPT Coach Voice",
-                    "Model output unavailable",
-                    "No trained nanoGPT checkpoint was found, or the prompt contains characters outside the tokenizer. The EV-based coach explanation is still active.",
+                    "Grounded response unavailable",
+                    "This hand is not yet covered by the grounded nanoGPT training set. The EV engine still chooses the move, and the built-in coach explanation remains active.",
                 )
-            else:
+            elif not readable_gpt_text(gpt_reason):
+                fallback_text = coach_text or explanation
                 render_panel(
                     "nanoGPT Coach Voice",
-                    "Additional natural-language flavor",
-                    extract_reason_only(gpt_output),
+                    "Experimental model warming up",
+                    f"The trained nanoGPT checkpoint is loaded, but this generation was not readable enough to show. Using the clean coach explanation for now: {fallback_text}",
+                )
+            else:
+                source_title = (
+                    "Retrieval-grounded language layer"
+                    if grounded_response
+                    else "Explanation-only language layer"
+                )
+                render_panel(
+                    "nanoGPT Coach Voice",
+                    source_title,
+                    gpt_reason,
                 )
 
                 with st.expander("Show full nanoGPT output"):
