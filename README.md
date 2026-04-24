@@ -66,3 +66,5 @@ determine
 -TOML
 -PowerShell
 ```
+## Contributions
+- Added blackjack AI logic and training pipeline
