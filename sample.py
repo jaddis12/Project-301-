@@ -28,9 +28,10 @@ model.load_state_dict(checkpoint["model_state_dict"])
 model.eval()
 
 prompt = (
-    "Player: 10,6 | Dealer: 7 | Total: 16 | Soft: False | Pair: False | Action: Hit | "
-    "Best EV: -0.557 | EVs: {'Hit': -0.557, 'Stand': -0.567} | "
-    "Reason: Hard 16 against a dealer 7 is usually too weak to stand on. | "
+    "Player: 8,8 | Dealer: 6 | Total: 16 | Soft: False | Pair: True | "
+    "Double Allowed: True | Split Allowed: True | Dealer Hits Soft 17: False | Deck Count: 2 | "
+    "Action: Split | Best EV: 0.3328 | EVs: {'Double': -0.8286, 'Hit': -0.4143, 'Split': 0.3328, 'Stand': -0.1654} | "
+    "Reason: Splitting 8s breaks up a weak hard 16, which is usually one of the worst totals to keep together. | "
     "Tier: EV Edge | Voice: expected_value | Coach Call:"
 )
 x = torch.tensor([encode(prompt)], dtype=torch.long, device=device)

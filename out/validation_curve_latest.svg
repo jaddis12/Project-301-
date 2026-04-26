@@ -1,0 +1,109 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560" role="img" aria-labelledby="title desc">
+  <title id="title">nanoGPT Training Progress (Latest Run)</title>
+  <desc id="desc">Train and validation loss by training step for the latest full default-rule two-card, three-card, and four-card training run.</desc>
+  <rect width="900" height="560" fill="#fbf6ef"/>
+  <g font-family="Arial, Helvetica, sans-serif" fill="#1d2a22">
+    <text x="450" y="42" text-anchor="middle" font-size="28" font-weight="700">nanoGPT Training Progress (Latest Run)</text>
+    <text x="450" y="72" text-anchor="middle" font-size="16">Full default-rule 2-card, 3-card, and 4-card coverage run</text>
+  </g>
+
+  <g transform="translate(90,90)">
+    <rect x="0" y="0" width="740" height="390" fill="#fffaf3" stroke="#d8cbb6"/>
+
+    <g stroke="#e2d7c5" stroke-width="1">
+      <line x1="0" y1="390" x2="740" y2="390"/>
+      <line x1="0" y1="325" x2="740" y2="325"/>
+      <line x1="0" y1="260" x2="740" y2="260"/>
+      <line x1="0" y1="195" x2="740" y2="195"/>
+      <line x1="0" y1="130" x2="740" y2="130"/>
+      <line x1="0" y1="65" x2="740" y2="65"/>
+      <line x1="0" y1="0" x2="740" y2="0"/>
+    </g>
+
+    <g stroke="#e2d7c5" stroke-width="1">
+      <line x1="0" y1="0" x2="0" y2="390"/>
+      <line x1="123.3" y1="0" x2="123.3" y2="390"/>
+      <line x1="246.7" y1="0" x2="246.7" y2="390"/>
+      <line x1="370" y1="0" x2="370" y2="390"/>
+      <line x1="493.3" y1="0" x2="493.3" y2="390"/>
+      <line x1="616.7" y1="0" x2="616.7" y2="390"/>
+      <line x1="740" y1="0" x2="740" y2="390"/>
+    </g>
+
+    <g stroke="#1d2a22" stroke-width="2">
+      <line x1="0" y1="390" x2="740" y2="390"/>
+      <line x1="0" y1="0" x2="0" y2="390"/>
+    </g>
+
+    <g font-family="Arial, Helvetica, sans-serif" font-size="13" fill="#5f675f">
+      <text x="-20" y="394" text-anchor="end">0.0</text>
+      <text x="-20" y="329" text-anchor="end">0.8</text>
+      <text x="-20" y="264" text-anchor="end">1.6</text>
+      <text x="-20" y="199" text-anchor="end">2.4</text>
+      <text x="-20" y="134" text-anchor="end">3.2</text>
+      <text x="-20" y="69" text-anchor="end">4.0</text>
+      <text x="-20" y="14" text-anchor="end">4.8</text>
+
+      <text x="0" y="418" text-anchor="middle">0</text>
+      <text x="123.3" y="418" text-anchor="middle">400</text>
+      <text x="246.7" y="418" text-anchor="middle">800</text>
+      <text x="370" y="418" text-anchor="middle">1200</text>
+      <text x="493.3" y="418" text-anchor="middle">1600</text>
+      <text x="616.7" y="418" text-anchor="middle">2000</text>
+      <text x="740" y="418" text-anchor="middle">2400</text>
+    </g>
+
+    <polyline
+      fill="none"
+      stroke="#d7a94b"
+      stroke-width="4"
+      points="0,42.7 123.3,283.5 246.7,339.8 370,364.2 493.3,372 616.7,372.9 740,375.7"
+    />
+    <polyline
+      fill="none"
+      stroke="#1d6b4f"
+      stroke-width="4"
+      points="0,42.6 123.3,276.7 246.7,331.2 370,355.2 493.3,361.2 616.7,365.9 740,368.8"
+    />
+
+    <g fill="#d7a94b" stroke="#fbf6ef" stroke-width="2">
+      <circle cx="0" cy="42.7" r="5"/>
+      <circle cx="123.3" cy="283.5" r="5"/>
+      <circle cx="246.7" cy="339.8" r="5"/>
+      <circle cx="370" cy="364.2" r="5"/>
+      <circle cx="493.3" cy="372" r="5"/>
+      <circle cx="616.7" cy="372.9" r="5"/>
+      <circle cx="740" cy="375.7" r="5"/>
+    </g>
+
+    <g fill="#1d6b4f" stroke="#fbf6ef" stroke-width="2">
+      <circle cx="0" cy="42.6" r="5"/>
+      <circle cx="123.3" cy="276.7" r="5"/>
+      <circle cx="246.7" cy="331.2" r="5"/>
+      <circle cx="370" cy="355.2" r="5"/>
+      <circle cx="493.3" cy="361.2" r="5"/>
+      <circle cx="616.7" cy="365.9" r="5"/>
+      <circle cx="740" cy="368.8" r="5"/>
+    </g>
+
+    <g font-family="Arial, Helvetica, sans-serif" fill="#1d2a22">
+      <text x="370" y="455" text-anchor="middle" font-size="16" font-weight="700">Training Step</text>
+      <text x="-58" y="195" text-anchor="middle" font-size="16" font-weight="700" transform="rotate(-90 -58 195)">Loss</text>
+    </g>
+  </g>
+
+  <g transform="translate(630,105)" font-family="Arial, Helvetica, sans-serif" font-size="14">
+    <rect x="0" y="0" width="170" height="74" rx="10" fill="#fffaf3" stroke="#d8cbb6"/>
+    <line x1="16" y1="24" x2="46" y2="24" stroke="#d7a94b" stroke-width="4"/>
+    <circle cx="31" cy="24" r="4" fill="#d7a94b"/>
+    <text x="58" y="29" fill="#1d2a22">Train Loss</text>
+    <line x1="16" y1="50" x2="46" y2="50" stroke="#1d6b4f" stroke-width="4"/>
+    <circle cx="31" cy="50" r="4" fill="#1d6b4f"/>
+    <text x="58" y="55" fill="#1d2a22">Validation Loss</text>
+  </g>
+
+  <g font-family="Arial, Helvetica, sans-serif" fill="#5f675f" font-size="13">
+    <text x="90" y="525">Final validation loss: 0.2607</text>
+    <text x="90" y="545">Coverage update: exhaustive default-rule two-card, three-card, and four-card hand states against every dealer upcard.</text>
+  </g>
+</svg>

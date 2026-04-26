@@ -4,8 +4,8 @@
 # Expected data format:
 # - Place a plain text file at: data/train.txt
 # - Example lines:
-#   Player: 8,8 | Dealer: 6 | Action: Split | Reason: Splitting 8s avoids a weak hard 16.
-#   Player: 10,6 | Dealer: 7 | Action: Hit | Reason: Hard 16 against a dealer 7 is usually too weak to stand on.
+#   Player: 8,8 | Dealer: 6 | Total: 16 | Soft: False | Pair: True | Double Allowed: True | ...
+#   Tier: EV Edge | Voice: expected_value | Coach Call: Split leads the board at +0.333 units.
 #
 # This script:
 # - builds a character-level tokenizer
@@ -22,8 +22,11 @@ import math
 import json
 from pathlib import Path
 
+import matplotlib
 import torch
 import torch.nn as nn
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from model import GPT, GPTConfig
@@ -39,7 +42,7 @@ os.makedirs(SCRIPT_DIR / "data", exist_ok=True)
 os.makedirs(out_dir, exist_ok=True)
 
 # model hyperparameters
-block_size = 192
+block_size = 256
 n_layer = 4
 n_head = 4
 n_embd = 128
@@ -49,8 +52,8 @@ bias = True
 # training hyperparameters
 cpu_mode = not torch.cuda.is_available()
 batch_size = 12 if cpu_mode else 32
-max_iters = 1400 if cpu_mode else 3000
-eval_interval = 200 if cpu_mode else 200
+max_iters = 2400 if cpu_mode else 4200
+eval_interval = 400 if cpu_mode else 400
 eval_iters = 35 if cpu_mode else 100
 learning_rate = 3e-4
 weight_decay = 1e-2
@@ -68,9 +71,11 @@ train_ratio = 0.9
 
 # sample generation
 sample_prompt = (
-    "Player: 8,8 | Dealer: 6 | Total: 16 | Soft: False | Pair: True | Action: Split | "
-    "Best EV: 0.333 | EVs: {'Hit': -0.414, 'Stand': -0.165, 'Split': 0.333} | "
-    "Reason: Splitting 8s breaks up a weak hard 16. | Tier: EV Edge | Voice: expected_value | Coach Call:"
+    "Player: 8,8 | Dealer: 6 | Total: 16 | Soft: False | Pair: True | "
+    "Double Allowed: True | Split Allowed: True | Dealer Hits Soft 17: False | Deck Count: 2 | "
+    "Action: Split | Best EV: 0.3328 | EVs: {'Double': -0.8286, 'Hit': -0.4143, 'Split': 0.3328, 'Stand': -0.1654} | "
+    "Reason: Splitting 8s breaks up a weak hard 16, which is usually one of the worst totals to keep together. | "
+    "Tier: EV Edge | Voice: expected_value | Coach Call:"
 )
 sample_every_eval = True
 sample_max_new_tokens = 120
