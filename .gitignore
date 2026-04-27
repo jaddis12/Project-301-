@@ -3,6 +3,8 @@ __pycache__/
 *.log
 .venv/
 env/
-data/train.txt
-out/
-
+*.tmp
+out/final_model.pt
+out/latest_model.pt
+out/loss_curve.png
+out/validation_curve_latest.svg
