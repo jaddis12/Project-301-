@@ -18,16 +18,17 @@ import html
 import json
 from pathlib import Path
 import string
+import sys
 
 import streamlit as st
 import torch
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+if str(SCRIPT_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPT_DIR))
+
 from blackjack_engine import format_for_gpt, recommend_action
 from model import GPT, GPTConfig
-
-
-SCRIPT_DIR = Path(__file__).resolve().parent
-
 
 # --------------------------------------------------
 # Page config
