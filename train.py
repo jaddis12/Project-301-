@@ -4,8 +4,8 @@
 # Expected data format:
 # - Place a plain text file at: data/train.txt
 # - Example lines:
-#   Player: 8,8 | Dealer: 6 | Action: Split | Reason: Splitting 8s avoids a weak hard 16.
-#   Player: 10,6 | Dealer: 7 | Action: Hit | Reason: Hard 16 against a dealer 7 is usually too weak to stand on.
+#   Player: 8,8 | Dealer: 6 | Total: 16 | Soft: False | Pair: True | Double Allowed: True | ...
+#   Tier: EV Edge | Voice: expected_value | Coach Call: Split leads the board at +0.333 units.
 #
 # This script:
 # - builds a character-level tokenizer
@@ -22,8 +22,11 @@ import math
 import json
 from pathlib import Path
 
+import matplotlib
 import torch
 import torch.nn as nn
+
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
 from model import GPT, GPTConfig
@@ -32,12 +35,14 @@ from model import GPT, GPTConfig
 # -----------------------------
 # Configuration
 # -----------------------------
-data_path = "data/train.txt"
-out_dir = "out"
-os.makedirs("data", exist_ok=True)
+SCRIPT_DIR = Path(__file__).resolve().parent
+data_path = SCRIPT_DIR / "data" / "train.txt"
+out_dir = SCRIPT_DIR / "out"
+os.makedirs(SCRIPT_DIR / "data", exist_ok=True)
+os.makedirs(out_dir, exist_ok=True)
 
 # model hyperparameters
-block_size = 128
+block_size = 256
 n_layer = 4
 n_head = 4
 n_embd = 128
@@ -45,10 +50,11 @@ dropout = 0.1
 bias = True
 
 # training hyperparameters
-batch_size = 32
-max_iters = 3000
-eval_interval = 200
-eval_iters = 100
+cpu_mode = not torch.cuda.is_available()
+batch_size = 12 if cpu_mode else 32
+max_iters = 2400 if cpu_mode else 4200
+eval_interval = 400 if cpu_mode else 400
+eval_iters = 35 if cpu_mode else 100
 learning_rate = 3e-4
 weight_decay = 1e-2
 beta1 = 0.9
@@ -64,7 +70,13 @@ torch.manual_seed(1337)
 train_ratio = 0.9
 
 # sample generation
-sample_prompt = "Player: 8,8 | Dealer: 6 |"
+sample_prompt = (
+    "Player: 8,8 | Dealer: 6 | Total: 16 | Soft: False | Pair: True | "
+    "Double Allowed: True | Split Allowed: True | Dealer Hits Soft 17: False | Deck Count: 2 | "
+    "Action: Split | Best EV: 0.3328 | EVs: {'Double': -0.8286, 'Hit': -0.4143, 'Split': 0.3328, 'Stand': -0.1654} | "
+    "Reason: Splitting 8s breaks up a weak hard 16, which is usually one of the worst totals to keep together. | "
+    "Tier: EV Edge | Voice: expected_value | Coach Call:"
+)
 sample_every_eval = True
 sample_max_new_tokens = 120
 sample_temperature = 0.8
@@ -103,7 +115,7 @@ meta = {
     "stoi": stoi,
     "itos": itos,
 }
-with open(os.path.join(out_dir, "meta.json"), "w", encoding="utf-8") as f:
+with open(out_dir / "meta.json", "w", encoding="utf-8") as f:
     json.dump(meta, f, ensure_ascii=False, indent=2)
 
 data = torch.tensor(encode(text), dtype=torch.long)
@@ -117,6 +129,8 @@ print(f"Train length:   {len(train_data)}")
 print(f"Val length:     {len(val_data)}")
 print(f"Vocab size:     {vocab_size}")
 print(f"Device:         {device}")
+if cpu_mode:
+    print("CPU quick-start mode enabled: using smaller batches and fewer iterations.")
 
 
 # -----------------------------
@@ -235,7 +249,7 @@ for iter_num in range(max_iters + 1):
                 "iter_num": iter_num,
                 "best_val_loss": best_val_loss,
             }
-            torch.save(checkpoint, os.path.join(out_dir, "best_model.pt"))
+            torch.save(checkpoint, out_dir / "best_model.pt")
             print(f"Saved new best checkpoint at step {iter_num}")
 
         # save latest checkpoint
@@ -254,7 +268,7 @@ for iter_num in range(max_iters + 1):
             "iter_num": iter_num,
             "best_val_loss": best_val_loss,
         }
-        torch.save(latest_checkpoint, os.path.join(out_dir, "latest_model.pt"))
+        torch.save(latest_checkpoint, out_dir / "latest_model.pt")
 
         if sample_every_eval:
             print("\n--- Sample Generation ---")
@@ -299,7 +313,7 @@ torch.save(
         "iter_num": max_iters,
         "best_val_loss": best_val_loss,
     },
-    os.path.join(out_dir, "final_model.pt"),
+    out_dir / "final_model.pt",
 )
 
 print("Training complete.")
@@ -318,5 +332,5 @@ plt.title("Training and Validation Loss")
 plt.legend()
 plt.grid(True, alpha=0.3)
 plt.tight_layout()
-plt.savefig(os.path.join(out_dir, "loss_curve.png"), dpi=200)
-plt.show()
+plt.savefig(out_dir / "loss_curve.png", dpi=200)
+plt.close()
