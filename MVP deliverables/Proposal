@@ -1,0 +1,59 @@
+AI-Assisted Decision System for Blackjack and Poker
+Team Members:
+Joshua Addis, Ashley Corrales, Vassilios Hapitas,
+Ivan Muriel-Pacheco, Anthony Nguyen
+jaddis1@asu.edu, acorra34@asu.edu, vhapitas@asu.edu,
+imurielp@asu.edu, anguy161@asu.edu
+
+
+Problem Statement: Card games such as blackjack and poker require players to make sequential decisions under
+uncertainty. Most players rely on memorized heuristics or intuition rather than rigorous probability analysis, leading
+to suboptimal decisions. The primary users of our system are casual or intermediate players who want to improve
+their strategic decision-making but cannot calculate probabilities, expected value, or opponent behavior in real time.
+In blackjack, players must choose actions such as hit, stand, double, or split without knowing future cards. In poker,
+players must reason about hidden information and infer opponents’ hands from observed actions. Current approaches
+such as static strategy charts or simple card counting fail to adapt dynamically to changing game states. This creates
+an opportunity for an AI system that can analyze probabilities, enumerate outcomes, and recommend the action with
+the highest expected value.
+
+
+Why Now? Recent advances in machine learning, probabilistic modeling, and simulation make real-time strategic
+analysis feasible. Modern AI systems can efficiently simulate large numbers of game outcomes and update probability
+estimates as new information becomes available. In addition, publicly available datasets and simulation environments
+allow models to be trained on millions of synthetic poker and blackjack hands. Increased computing power enables
+near real-time evaluation of expected value, making AI-assisted decision support systems practical for complex strategic
+games. Over the next several years, systems that combine probabilistic reasoning and machine learning will become
+increasingly important in domains requiring decision-making under uncertainty.
+
+
+Proposed AI-Powered Solution: We propose an AI-driven system that evaluates the current game state and recommends the action with the highest expected value (EV). For blackjack, the model will simulate possible future card
+outcomes and compute EV for each action using
+EV = P(win)W + P(push) · 0 − P(lose)L
+allowing the system to recommend the optimal decision given the remaining deck composition. For poker, the system
+will use Bayesian inference to estimate opponent hand probabilities from observed actions:
+P(hand | action) = P(action | hand)P(hand)
+P(action) .
+By updating these probabilities after each betting action, the model can estimate win probabilities and evaluate whether
+a player should fold, call, or raise. AI provides value beyond rule-based strategies by dynamically updating probabilities,
+modeling opponent behavior, and evaluating many potential outcomes through simulation.
+
+
+Initial Technical Concept: The system will primarily rely on simulated gameplay data rather than real casino data.
+Millions of blackjack and poker hands can be generated to train and evaluate the models. Blackjack decisions will be
+evaluated through probabilistic simulation and expected value calculations based on deck composition and player/dealer
+states. Poker modeling will focus on estimating opponent hand distributions and updating beliefs using Bayesian
+inference. Potential techniques include Monte Carlo simulation for expected value estimation, reinforcement learning
+agents trained through self-play, and probabilistic classifiers for opponent modeling. Our nanoGPT component could be
+used to generate natural-language explanations of recommended strategies, helping users understand why a particular
+decision maximizes expected value.
+
+Scope for MVP: Within approximately six weeks, we plan to build a minimum viable product focused on blackjack
+decision support. A user will input their hand and the dealer’s visible card, and the system will compute and return the
+recommended action along with the estimated expected value. This demonstrates the core AI capability of enumerating
+outcomes and selecting the optimal decision. A simplified poker prototype may also be implemented where the system
+estimates opponent hand probabilities based on observed actions.
+
+
+Risks and Open Questions: Several uncertainties remain. Modeling opponent behavior in poker may require simplifying assumptions that limit realism. Evaluation metrics must ensure that the AI recommendations outperform
+baseline strategies such as standard blackjack charts. Finally, usability is an open question; the system must present
+recommendations clearly without requiring excessive manual input from the user.
