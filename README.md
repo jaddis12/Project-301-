@@ -46,7 +46,7 @@ determine
 ## Run Demo
 
 ```bash
-[streamlit run app.py](https://301-project-mp1.streamlit.app/)
+(https://dpfqg3y4vnwxm76u4wmfiw.streamlit.app/)
 ```
 
 ## Applications Used
