@@ -46,7 +46,7 @@ determine
 ## Run Demo
 
 ```bash
-(https://dpfqg3y4vnwxm76u4wmfiw.streamlit.app/)
+(https://byv3x3apkdtbfmrolbyy7q.streamlit.app/)
 ```
 
 ## Applications Used
