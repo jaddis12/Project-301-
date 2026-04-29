@@ -452,6 +452,40 @@ def stand_ev(
 
 
 @lru_cache(maxsize=None)
+def policy_ev(
+    cards: Tuple[str, ...],
+    dealer_card: str,
+    deck_counts: Tuple[int, ...],
+    dealer_hits_soft_17: bool,
+) -> float:
+    """
+    Follow a fast basic-strategy continuation policy after the current state.
+
+    The initial decision still compares EVs across legal opening actions. This
+    helper keeps later hit sequences practical by following one sensible policy
+    instead of re-solving the whole tree at every drawn card.
+    """
+    hand_info = classify_hand(list(cards))
+    if hand_info["is_bust"]:
+        return -1.0
+
+    dealer = dealer_upcard_value(dealer_card)
+    if hand_info["is_soft"]:
+        next_action = soft_hand_action(hand_info["total"], dealer, can_double=False)
+    else:
+        next_action = hard_total_action(hand_info["total"], dealer, can_double=False)
+
+    if next_action == "Stand":
+        return stand_ev(cards, dealer_card, deck_counts, dealer_hits_soft_17)
+
+    ev = 0.0
+    for card, probability, next_counts in draw_probabilities(deck_counts):
+        next_cards = cards + (card,)
+        ev += probability * policy_ev(next_cards, dealer_card, next_counts, dealer_hits_soft_17)
+    return ev
+
+
+@lru_cache(maxsize=None)
 def hit_ev(
     cards: Tuple[str, ...],
     dealer_card: str,
@@ -466,11 +500,7 @@ def hit_ev(
         if total > 21:
             next_ev = -1.0
         else:
-            # After taking a normal hit, the remaining player choices are hit or stand.
-            next_ev = max(
-                stand_ev(next_cards, dealer_card, next_counts, dealer_hits_soft_17),
-                hit_ev(next_cards, dealer_card, next_counts, dealer_hits_soft_17),
-            )
+            next_ev = policy_ev(next_cards, dealer_card, next_counts, dealer_hits_soft_17)
         ev += probability * next_ev
 
     return ev
@@ -498,6 +528,43 @@ def double_ev(
 
 
 @lru_cache(maxsize=None)
+def split_hand_ev(
+    pair_card: str,
+    dealer_card: str,
+    deck_counts: Tuple[int, ...],
+    dealer_hits_soft_17: bool,
+    can_double_after_split: bool,
+) -> float:
+    """
+    Expected value of one post-split hand after drawing its second card.
+
+    This uses the same finite-deck logic as the rest of the engine, but keeps
+    split evaluation practical by avoiding a second nested draw tree for the
+    sibling hand. For the app's coaching use, that tradeoff is far better than
+    making every split hand feel frozen.
+    """
+    pair_card = normalize_card(pair_card)
+    ev = 0.0
+
+    for draw, probability, next_counts in draw_probabilities(deck_counts):
+        hand = (pair_card, draw)
+        hand_ev = stand_ev(hand, dealer_card, next_counts, dealer_hits_soft_17)
+        if pair_card != "A":
+            hand_ev = max(
+                hand_ev,
+                hit_ev(hand, dealer_card, next_counts, dealer_hits_soft_17),
+            )
+            if can_double_after_split:
+                hand_ev = max(
+                    hand_ev,
+                    double_ev(hand, dealer_card, next_counts, dealer_hits_soft_17),
+                )
+        ev += probability * hand_ev
+
+    return ev
+
+
+@lru_cache(maxsize=None)
 def split_ev(
     pair_card: str,
     dealer_card: str,
@@ -506,45 +573,20 @@ def split_ev(
     can_double_after_split: bool,
 ) -> float:
     """
-    Approximate split EV as two sequential split hands with no resplitting.
-    Split aces receive one card only, matching many common casino rules.
+    Approximate split EV as two equivalent post-split hands with no
+    resplitting. Split aces receive one card only, matching many common casino
+    rules.
+
+    This is intentionally faster than the fully sequential version because the
+    UI needs split recommendations to return promptly during live demos.
     """
-    pair_card = normalize_card(pair_card)
-    ev = 0.0
-
-    for first_draw, first_probability, after_first in draw_probabilities(deck_counts):
-        first_hand = (pair_card, first_draw)
-        first_ev = stand_ev(first_hand, dealer_card, after_first, dealer_hits_soft_17)
-        if pair_card != "A":
-            first_ev = max(
-                first_ev,
-                hit_ev(first_hand, dealer_card, after_first, dealer_hits_soft_17),
-            )
-            if can_double_after_split:
-                first_ev = max(
-                    first_ev,
-                    double_ev(first_hand, dealer_card, after_first, dealer_hits_soft_17),
-                )
-
-        second_ev_total = 0.0
-        for second_draw, second_probability, after_second in draw_probabilities(after_first):
-            second_hand = (pair_card, second_draw)
-            second_ev = stand_ev(second_hand, dealer_card, after_second, dealer_hits_soft_17)
-            if pair_card != "A":
-                second_ev = max(
-                    second_ev,
-                    hit_ev(second_hand, dealer_card, after_second, dealer_hits_soft_17),
-                )
-                if can_double_after_split:
-                    second_ev = max(
-                        second_ev,
-                        double_ev(second_hand, dealer_card, after_second, dealer_hits_soft_17),
-                    )
-            second_ev_total += second_probability * second_ev
-
-        ev += first_probability * (first_ev + second_ev_total)
-
-    return ev
+    return 2.0 * split_hand_ev(
+        pair_card,
+        dealer_card,
+        deck_counts,
+        dealer_hits_soft_17,
+        can_double_after_split,
+    )
 
 
 def natural_blackjack_ev(state: GameState, deck_counts: Tuple[int, ...]) -> float:
@@ -1023,6 +1065,10 @@ def format_for_gpt(result: Dict[str, Any]) -> str:
         f"Total: {hand['total']} | "
         f"Soft: {hand['is_soft']} | "
         f"Pair: {hand['is_pair']} | "
+        f"Double Allowed: {state['can_double']} | "
+        f"Split Allowed: {state['can_split']} | "
+        f"Dealer Hits Soft 17: {state['dealer_hits_soft_17']} | "
+        f"Deck Count: {state['deck_count']} | "
         f"Action: {result['recommended_action']} | "
         f"Best EV: {result.get('best_ev')} | "
         f"EVs: {result.get('action_evs', {})} | "
