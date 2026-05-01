@@ -46,7 +46,7 @@ determine
 ## Run Demo URL
 
 ```bash
-https://byv3x3apkdtbfmrolbyy7q.streamlit.app/
+https://301-project-mp1.streamlit.app
 ```
 
 ## Applications Used
